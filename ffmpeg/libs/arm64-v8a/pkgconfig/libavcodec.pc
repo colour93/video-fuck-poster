@@ -1,0 +1,14 @@
+prefix=/home/colour93/ffmpeg-android/FFmpeg/android/armv8-a
+exec_prefix=${prefix}
+libdir=/home/colour93/ffmpeg-android/FFmpeg/android/armv8-a/lib
+includedir=/home/colour93/ffmpeg-android/FFmpeg/android/armv8-a/include
+
+Name: libavcodec
+Description: FFmpeg codec library
+Version: 61.22.100
+Requires: 
+Requires.private: libswresample >= 5.4.100, libavutil >= 59.42.100
+Conflicts:
+Libs: -L${libdir}  -lavcodec 
+Libs.private: -pthread -lm -latomic -landroid -lmediandk -lz
+Cflags: -I${includedir}

@@ -1,0 +1,14 @@
+prefix=/home/colour93/ffmpeg-android/FFmpeg/android/armv8-a
+exec_prefix=${prefix}
+libdir=/home/colour93/ffmpeg-android/FFmpeg/android/armv8-a/lib
+includedir=/home/colour93/ffmpeg-android/FFmpeg/android/armv8-a/include
+
+Name: libavutil
+Description: FFmpeg utility library
+Version: 59.42.100
+Requires: 
+Requires.private: 
+Conflicts:
+Libs: -L${libdir}  -lavutil 
+Libs.private: -pthread -lm -latomic -landroid -lmediandk
+Cflags: -I${includedir}
