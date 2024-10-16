@@ -20,9 +20,14 @@ class DataViewModel : ViewModel() {
         _uiState.value = _uiState.value.copy(videoCapturePath = newVideoCapturePath)
     }
 
+    fun updateCaptureTime(newTime: Float) {
+        _uiState.value = _uiState.value.copy(captureTime = newTime)
+    }
+
 }
 
 data class UiState(
     val videoInfo: VideoInfo? = null,
-    val videoCapturePath: File? = null
+    val videoCapturePath: File? = null,
+    val captureTime: Float = 0f
 )

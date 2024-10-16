@@ -21,15 +21,25 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Button
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Slider
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.rememberAsyncImagePainter
@@ -40,6 +50,7 @@ import icu.fur93.videofuckposter.ui.DataViewModel
 import java.io.File
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
+import kotlin.math.floor
 
 class MainActivity : ComponentActivity() {
     private lateinit var requestPermissionLauncher: ActivityResultLauncher<String>
@@ -126,6 +137,7 @@ class MainActivity : ComponentActivity() {
                 VideoPickerButton(viewModel)
                 CaptureFrameButton(viewModel)
             }
+            TimePicker(viewModel)
             VideoInfoText(viewModel)
             PosterPreview(viewModel)
         }
@@ -196,7 +208,11 @@ class MainActivity : ComponentActivity() {
                 }.bmp"
             )
             Log.d("internal storage", imageFile.path)
-            val result = ffmpegManager.captureFrame(videoInfo!!.path, 5.0f, imageFile.path)
+            val result = ffmpegManager.captureFrame(
+                videoInfo!!.path,
+                viewModel.uiState.value.captureTime,
+                imageFile.path
+            )
             if (result) {
                 viewModel.updateVideoCapturePath(imageFile)
             }
@@ -205,6 +221,43 @@ class MainActivity : ComponentActivity() {
         }) {
             Text("截取图片")
         }
+    }
+
+    @Composable
+    fun TimePicker(viewModel: DataViewModel) {
+
+        // 观察 uiState
+        val uiState = viewModel.uiState.collectAsState().value
+
+        if (uiState.videoInfo != null) {
+
+            // 将秒转换为 HH:MM:SS 格式
+            val hours = floor(uiState.captureTime / 3600).toInt()
+            val minutes = floor(uiState.captureTime / 60).toInt()
+            val seconds = (uiState.captureTime % 60).toInt()
+            val formattedTime = String.format("%02d:%02d:%02d", hours, minutes, seconds)
+
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth(),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                // 显示已选中的时间
+                Text(
+                    text = formattedTime,
+                    style = MaterialTheme.typography.headlineSmall
+                )
+
+                // 滑动条用于选择时间长度
+                Slider(
+                    value = uiState.captureTime,
+                    onValueChange = { viewModel.updateCaptureTime(it) },
+                    valueRange = 0f..uiState.videoInfo.duration.toFloat(),
+                    steps = (uiState.videoInfo.duration - 1).toInt()
+                )
+            }
+        }
+
     }
 
     @Composable

@@ -95,8 +95,7 @@ Java_icu_fur93_ffmpeg_FFmpegJni_getVideoInfo(JNIEnv *env, jobject thiz, jstring 
 // 获取视频截图
 extern "C"
 JNIEXPORT jboolean JNICALL
-Java_icu_fur93_ffmpeg_FFmpegJni_captureFrame(JNIEnv *env, jobject obj, jstring jVideoPath,
-                                             jfloat timeInSeconds, jstring jOutputPath) {
+Java_icu_fur93_ffmpeg_FFmpegJni_captureFrame(JNIEnv *env, jobject obj, jstring jVideoPath, jfloat timeInSeconds, jstring jOutputPath) {
     const char *videoPath = env->GetStringUTFChars(jVideoPath, nullptr);
     const char *outputPath = env->GetStringUTFChars(jOutputPath, nullptr);
 
@@ -108,8 +107,6 @@ Java_icu_fur93_ffmpeg_FFmpegJni_captureFrame(JNIEnv *env, jobject obj, jstring j
 
     int videoStreamIndex = -1;
     int response = 0;
-    int targetFrameIndex = 0;
-    float fps = 0;
 
     // 打开视频文件
     if (avformat_open_input(&pFormatContext, videoPath, nullptr, nullptr) != 0) {
@@ -135,16 +132,12 @@ Java_icu_fur93_ffmpeg_FFmpegJni_captureFrame(JNIEnv *env, jobject obj, jstring j
         return JNI_FALSE;
     }
 
-    // 获取视频帧率
-    AVStream *videoStream = pFormatContext->streams[videoStreamIndex];
-    fps = av_q2d(videoStream->r_frame_rate);
-    if (fps <= 0) {
-        LOGD("Could not determine FPS");
+    // 使用 Seek 跳转到指定时间
+    int64_t targetTimestamp = static_cast<int64_t>(timeInSeconds * AV_TIME_BASE);
+    if (av_seek_frame(pFormatContext, videoStreamIndex, targetTimestamp, AVSEEK_FLAG_BACKWARD) < 0) {
+        LOGD("Error seeking to time %f", timeInSeconds);
         return JNI_FALSE;
     }
-
-    // 计算目标帧索引
-    targetFrameIndex = (int) (timeInSeconds * fps);
 
     // 获取解码器
     AVCodecParameters *pCodecParameters = pFormatContext->streams[videoStreamIndex]->codecpar;
@@ -175,21 +168,16 @@ Java_icu_fur93_ffmpeg_FFmpegJni_captureFrame(JNIEnv *env, jobject obj, jstring j
     }
 
     // 分配 RGB 图像内存
-    int numBytes = av_image_get_buffer_size(AV_PIX_FMT_RGB24, pCodecContext->width,
-                                            pCodecContext->height, 32);
-    uint8_t *buffer = (uint8_t *) av_malloc(numBytes * sizeof(uint8_t));
-    av_image_fill_arrays(pFrameRGB->data, pFrameRGB->linesize, buffer, AV_PIX_FMT_RGB24,
-                         pCodecContext->width, pCodecContext->height, 1);
+    int numBytes = av_image_get_buffer_size(AV_PIX_FMT_RGB24, pCodecContext->width, pCodecContext->height, 32);
+    uint8_t *buffer = (uint8_t *)av_malloc(numBytes * sizeof(uint8_t));
+    av_image_fill_arrays(pFrameRGB->data, pFrameRGB->linesize, buffer, AV_PIX_FMT_RGB24, pCodecContext->width, pCodecContext->height, 1);
 
     // 初始化缩放上下文
     swsCtx = sws_getContext(pCodecContext->width, pCodecContext->height, pCodecContext->pix_fmt,
                             pCodecContext->width, pCodecContext->height, AV_PIX_FMT_RGB24,
                             SWS_BILINEAR, nullptr, nullptr, nullptr);
 
-    // 读取帧，直到找到目标帧
-    int currentFrameIndex = 0;
-    bool frameCaptured = false;
-
+    // 读取帧
     while (av_read_frame(pFormatContext, &packet) >= 0) {
         if (packet.stream_index == videoStreamIndex) {
             response = avcodec_send_packet(pCodecContext, &packet);
@@ -201,38 +189,26 @@ Java_icu_fur93_ffmpeg_FFmpegJni_captureFrame(JNIEnv *env, jobject obj, jstring j
             while (response >= 0) {
                 response = avcodec_receive_frame(pCodecContext, pFrame);
                 if (response == AVERROR(EAGAIN) || response == AVERROR_EOF) {
-                    break;  // 返回外层循环，读取下一个包
+                    break; // 遇到 EAGAIN 或 EOF，退出内层循环
                 } else if (response < 0) {
                     LOGD("Error while receiving frame from decoder");
                     return JNI_FALSE;
                 }
 
-                // 如果当前帧是目标帧
-                if (currentFrameIndex == targetFrameIndex) {
-                    // 将图像转换为 RGB
-                    sws_scale(swsCtx, (uint8_t const *const *) pFrame->data,
-                              pFrame->linesize, 0, pCodecContext->height,
-                              pFrameRGB->data, pFrameRGB->linesize);
+                // 保存帧到文件
+                sws_scale(swsCtx, (uint8_t const *const *)pFrame->data,
+                          pFrame->linesize, 0, pCodecContext->height,
+                          pFrameRGB->data, pFrameRGB->linesize);
 
-                    // 保存帧到文件
-                    save_frame_as_bmp(pFrameRGB, pCodecContext->width, pCodecContext->height,
-                                      outputPath);
-                    LOGD("Frame saved to %s", outputPath);
-
-                    frameCaptured = true;
-                    break;
-                }
-
-                currentFrameIndex++;
-            }
-
-            if (frameCaptured) {
-                break;  // 找到目标帧后，跳出整个循环
+                save_frame_as_bmp(pFrameRGB, pCodecContext->width, pCodecContext->height, outputPath);
+                LOGD("Frame saved to %s", outputPath);
+                goto cleanup; // 找到目标帧后直接跳出
             }
         }
         av_packet_unref(&packet);
     }
 
+    cleanup:
     // 释放内存
     av_free(buffer);
     av_frame_free(&pFrame);
@@ -243,5 +219,5 @@ Java_icu_fur93_ffmpeg_FFmpegJni_captureFrame(JNIEnv *env, jobject obj, jstring j
     env->ReleaseStringUTFChars(jVideoPath, videoPath);
     env->ReleaseStringUTFChars(jOutputPath, outputPath);
 
-    return frameCaptured ? JNI_TRUE : JNI_FALSE;
+    return JNI_TRUE;
 }
