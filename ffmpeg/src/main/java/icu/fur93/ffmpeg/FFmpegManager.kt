@@ -23,11 +23,11 @@ class FFmpegManager {
     }
 
     // 获取视频截图
-    fun captureFrame(filePath: String, outputImagePath: String, time: String): String {
+    fun captureFrame(videoPath: String, timeInSeconds: Float, outputPath: String): Boolean {
 //        return FFmpegJni.captureFrame(
 //            filePath, outputImagePath, time
 //        ) == "success"
-        return FFmpegJni.captureFrame(filePath, outputImagePath, time)
+        return FFmpegJni.captureFrame(videoPath, timeInSeconds, outputPath)
     }
 
 }

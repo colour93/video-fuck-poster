@@ -5,6 +5,7 @@ import icu.fur93.ffmpeg.video.VideoInfo
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import java.io.File
 
 class DataViewModel : ViewModel() {
 
@@ -15,8 +16,13 @@ class DataViewModel : ViewModel() {
         _uiState.value = _uiState.value.copy(videoInfo = newVideoInfo)
     }
 
+    fun updateVideoCapturePath(newVideoCapturePath: File?) {
+        _uiState.value = _uiState.value.copy(videoCapturePath = newVideoCapturePath)
+    }
+
 }
 
 data class UiState(
-    val videoInfo: VideoInfo? = null
+    val videoInfo: VideoInfo? = null,
+    val videoCapturePath: File? = null
 )

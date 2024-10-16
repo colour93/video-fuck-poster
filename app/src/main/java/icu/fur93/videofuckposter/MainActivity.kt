@@ -17,8 +17,10 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Button
@@ -26,13 +28,18 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import coil.compose.rememberAsyncImagePainter
+import coil.compose.rememberImagePainter
 import icu.fur93.ffmpeg.FFmpegManager
 import icu.fur93.ffmpeg.video.VideoInfo
 import icu.fur93.videofuckposter.ui.DataViewModel
 import java.io.File
+import java.time.LocalDateTime
+import java.time.format.DateTimeFormatter
 
 class MainActivity : ComponentActivity() {
     private lateinit var requestPermissionLauncher: ActivityResultLauncher<String>
@@ -110,11 +117,17 @@ class MainActivity : ComponentActivity() {
                 .padding(16.dp), // 添加内边距
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            PermissionGrantButton()
-            VideoPickerButton(viewModel)
-            CaptureFrameButton()
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                PermissionGrantButton()
+                VideoPickerButton(viewModel)
+                CaptureFrameButton(viewModel)
+            }
             VideoInfoText(viewModel)
-            PosterPreview()
+            PosterPreview(viewModel)
         }
     }
 
@@ -158,7 +171,7 @@ class MainActivity : ComponentActivity() {
     }
 
     @Composable()
-    fun CaptureFrameButton() {
+    fun CaptureFrameButton(viewModel: DataViewModel) {
         val context = LocalContext.current
 
         Button(onClick = {
@@ -168,16 +181,27 @@ class MainActivity : ComponentActivity() {
             }
             Log.d("capture", "starting")
             // 获取内部存储的根目录
-            val dir = getExternalFilesDir(null)
-            val file = File(dir, "example.txt")
-            file.writeText("Hello, World!")
-            // 创建 capture-1.png 文件
-            val imageFile = File(dir, "capture-1.png")
+            val dir = File(
+                Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS),
+                "VideoFuckPoster"
+            )
+            if (!dir.exists()) {
+                // 创建目录
+                dir.mkdirs() // 使用 mkdirs() 以便支持创建多级目录
+            }
+            val imageFile = File(
+                dir,
+                "${
+                    LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMddHHmmss"))
+                }.bmp"
+            )
             Log.d("internal storage", imageFile.path)
-            val result = ffmpegManager.captureFrame(videoInfo!!.path, imageFile.path, "00:00:01")
-//            Toast.makeText(context, if (result) "截图成功" else "截图失败", Toast.LENGTH_SHORT)
-//                .show()
-            Toast.makeText(context, result, Toast.LENGTH_SHORT).show()
+            val result = ffmpegManager.captureFrame(videoInfo!!.path, 5.0f, imageFile.path)
+            if (result) {
+                viewModel.updateVideoCapturePath(imageFile)
+            }
+            Toast.makeText(context, if (result) "截取成功" else "截取失败", Toast.LENGTH_SHORT)
+                .show()
         }) {
             Text("截取图片")
         }
@@ -215,7 +239,19 @@ class MainActivity : ComponentActivity() {
     }
 
     @Composable
-    fun PosterPreview() {
-        Text("test")
+    fun PosterPreview(viewModel: DataViewModel) {
+        // 观察 uiState
+        val uiState = viewModel.uiState.collectAsState().value
+
+        if (uiState.videoCapturePath != null) {
+            val imageUri: Uri = Uri.fromFile(uiState.videoCapturePath)
+            Image(
+                painter = rememberAsyncImagePainter(imageUri),
+                contentDescription = null,
+                modifier = Modifier
+                    .fillMaxWidth(),
+                contentScale = ContentScale.Crop
+            )
+        }
     }
 }
