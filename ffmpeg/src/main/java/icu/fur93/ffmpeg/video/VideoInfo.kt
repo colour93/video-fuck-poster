@@ -1,6 +1,7 @@
 package icu.fur93.ffmpeg.video
 
 data class VideoInfo(
+    val path: String,
     val format: String,
     val duration: Long,
     val bitrate: Long,

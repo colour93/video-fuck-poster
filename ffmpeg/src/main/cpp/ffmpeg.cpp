@@ -1,6 +1,8 @@
 #include <jni.h>
 #include <string>
 #include <sstream>
+#include <cstdlib>
+#include <unistd.h>
 #include <nlohmann/json.hpp>
 using json = nlohmann::json;
 
@@ -44,6 +46,7 @@ Java_icu_fur93_ffmpeg_FFmpegJni_getVideoInfo(JNIEnv *env, jobject thiz, jstring 
     json videoInfoJson;
 
     // 添加格式信息
+    videoInfoJson["path"] = env->GetStringUTFChars(filePath, nullptr);
     videoInfoJson["format"] = fmt_ctx->iformat->name;
     videoInfoJson["duration"] = fmt_ctx->duration / AV_TIME_BASE; // 秒
     videoInfoJson["bitrate"] = fmt_ctx->bit_rate;
@@ -74,4 +77,43 @@ Java_icu_fur93_ffmpeg_FFmpegJni_getVideoInfo(JNIEnv *env, jobject thiz, jstring 
 
     // 返回 JSON 字符串
     return env->NewStringUTF(videoInfoJson.dump().c_str());
+}
+
+// 获取视频截图
+extern "C"
+JNIEXPORT jstring JNICALL
+Java_icu_fur93_ffmpeg_FFmpegJni_captureFrame(JNIEnv *env, jobject thiz, jstring filePath, jstring outputImagePath, jstring time) {
+    const char *inputFile = env->GetStringUTFChars(filePath, nullptr);
+    const char *outputFile = env->GetStringUTFChars(outputImagePath, nullptr);
+    const char *captureTime = env->GetStringUTFChars(time, nullptr);
+
+    // FFmpeg 命令
+    std::string command = "ffmpeg -i ";
+    command += inputFile;
+    command += " -ss ";
+    command += captureTime;
+    command += " -frames:v 1 ";
+    command += outputFile;
+
+    // 检查输出路径是否可写
+    if (access(outputFile, W_OK) != 0) {
+        env->ReleaseStringUTFChars(filePath, inputFile);
+        env->ReleaseStringUTFChars(outputImagePath, outputFile);
+        env->ReleaseStringUTFChars(time, captureTime);
+        return env->NewStringUTF("Output path is not writable");
+    }
+
+    // 执行 FFmpeg 命令
+    int ret = system(command.c_str());
+
+    env->ReleaseStringUTFChars(filePath, inputFile);
+    env->ReleaseStringUTFChars(outputImagePath, outputFile);
+    env->ReleaseStringUTFChars(time, captureTime);
+
+    // 根据 FFmpeg 命令执行的返回值返回结果
+    if (ret == 0) {
+        return env->NewStringUTF("success");
+    } else {
+        return env->NewStringUTF("failed");
+    }
 }

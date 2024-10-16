@@ -5,7 +5,7 @@ import icu.fur93.ffmpeg.video.VideoInfo
 
 class FFmpegManager {
 
-    val gson = Gson()
+    private val gson = Gson()
 
     init {
         System.loadLibrary("ffmpeg")
@@ -20,6 +20,14 @@ class FFmpegManager {
     fun getVideoInfo(filePath: String): VideoInfo? {
         val json = FFmpegJni.getVideoInfo(filePath) ?: return null
         return gson.fromJson(json, VideoInfo::class.java)
+    }
+
+    // 获取视频截图
+    fun captureFrame(filePath: String, outputImagePath: String, time: String): String {
+//        return FFmpegJni.captureFrame(
+//            filePath, outputImagePath, time
+//        ) == "success"
+        return FFmpegJni.captureFrame(filePath, outputImagePath, time)
     }
 
 }
