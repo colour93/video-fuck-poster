@@ -26,10 +26,15 @@ class DataViewModel() : ViewModel() {
     private val _uiState = MutableStateFlow(UiState())
     val uiState: StateFlow<UiState> = _uiState.asStateFlow()
 
-    fun videoPickerHandler(videoPath: String) {
+    fun videoPickerHandler(videoPath: String, ctx: Context) {
         Log.d("video path", videoPath)
         val newVideoInfo =
             videoPath.let { _ffmpegManager.getVideoInfo(it) }
+        if (newVideoInfo == null) {
+            Toast.makeText(ctx, "获取视频信息失败", Toast.LENGTH_SHORT).show()
+            return;
+        }
+        Toast.makeText(ctx, "选择成功：${File(videoPath).name}", Toast.LENGTH_LONG).show()
         _uiState.value = _uiState.value.copy(videoInfo = newVideoInfo)
     }
 
