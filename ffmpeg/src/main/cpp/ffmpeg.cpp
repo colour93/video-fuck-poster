@@ -95,7 +95,8 @@ Java_icu_fur93_ffmpeg_FFmpegJni_getVideoInfo(JNIEnv *env, jobject thiz, jstring 
 // 获取视频截图
 extern "C"
 JNIEXPORT jboolean JNICALL
-Java_icu_fur93_ffmpeg_FFmpegJni_captureFrame(JNIEnv *env, jobject obj, jstring jVideoPath, jfloat timeInSeconds, jstring jOutputPath) {
+Java_icu_fur93_ffmpeg_FFmpegJni_captureFrame(JNIEnv *env, jobject obj, jstring jVideoPath,
+                                             jfloat timeInSeconds, jstring jOutputPath) {
     const char *videoPath = env->GetStringUTFChars(jVideoPath, nullptr);
     const char *outputPath = env->GetStringUTFChars(jOutputPath, nullptr);
 
@@ -120,24 +121,23 @@ Java_icu_fur93_ffmpeg_FFmpegJni_captureFrame(JNIEnv *env, jobject obj, jstring j
         return JNI_FALSE;
     }
 
-    // 查找视频流
-    for (int i = 0; i < pFormatContext->nb_streams; i++) {
-        if (pFormatContext->streams[i]->codecpar->codec_type == AVMEDIA_TYPE_VIDEO) {
-            videoStreamIndex = i;
-            break;
-        }
-    }
-    if (videoStreamIndex == -1) {
-        LOGD("Could not find video stream");
+    // 自动查找最佳视频流
+    videoStreamIndex = av_find_best_stream(pFormatContext, AVMEDIA_TYPE_VIDEO, -1, -1, NULL, 0);
+    if (videoStreamIndex < 0) {
+        printf("Could not find a video stream\n");
         return JNI_FALSE;
     }
 
-    // 使用 Seek 跳转到指定时间
-    int64_t targetTimestamp = static_cast<int64_t>(timeInSeconds * AV_TIME_BASE);
-    if (av_seek_frame(pFormatContext, videoStreamIndex, targetTimestamp, AVSEEK_FLAG_BACKWARD) < 0) {
-        LOGD("Error seeking to time %f", timeInSeconds);
+    // 使用视频流的 time_base 计算时间戳
+    AVRational time_base = pFormatContext->streams[videoStreamIndex]->time_base;
+    auto target_timestamp = (int64_t)(timeInSeconds / av_q2d(time_base));
+
+    // 跳转到目标时间戳
+    if (av_seek_frame(pFormatContext, videoStreamIndex, target_timestamp, AVSEEK_FLAG_BACKWARD) < 0) {
+        printf("Error seeking to timestamp\n");
         return JNI_FALSE;
     }
+    LOGD("Time is %f, target_timestamp is %ld", timeInSeconds, target_timestamp);
 
     // 获取解码器
     AVCodecParameters *pCodecParameters = pFormatContext->streams[videoStreamIndex]->codecpar;
@@ -168,9 +168,11 @@ Java_icu_fur93_ffmpeg_FFmpegJni_captureFrame(JNIEnv *env, jobject obj, jstring j
     }
 
     // 分配 RGB 图像内存
-    int numBytes = av_image_get_buffer_size(AV_PIX_FMT_RGB24, pCodecContext->width, pCodecContext->height, 32);
-    uint8_t *buffer = (uint8_t *)av_malloc(numBytes * sizeof(uint8_t));
-    av_image_fill_arrays(pFrameRGB->data, pFrameRGB->linesize, buffer, AV_PIX_FMT_RGB24, pCodecContext->width, pCodecContext->height, 1);
+    int numBytes = av_image_get_buffer_size(AV_PIX_FMT_RGB24, pCodecContext->width,
+                                            pCodecContext->height, 32);
+    auto *buffer = (uint8_t *) av_malloc(numBytes * sizeof(uint8_t));
+    av_image_fill_arrays(pFrameRGB->data, pFrameRGB->linesize, buffer, AV_PIX_FMT_RGB24,
+                         pCodecContext->width, pCodecContext->height, 1);
 
     // 初始化缩放上下文
     swsCtx = sws_getContext(pCodecContext->width, pCodecContext->height, pCodecContext->pix_fmt,
@@ -196,11 +198,12 @@ Java_icu_fur93_ffmpeg_FFmpegJni_captureFrame(JNIEnv *env, jobject obj, jstring j
                 }
 
                 // 保存帧到文件
-                sws_scale(swsCtx, (uint8_t const *const *)pFrame->data,
+                sws_scale(swsCtx, (uint8_t const *const *) pFrame->data,
                           pFrame->linesize, 0, pCodecContext->height,
                           pFrameRGB->data, pFrameRGB->linesize);
 
-                save_frame_as_bmp(pFrameRGB, pCodecContext->width, pCodecContext->height, outputPath);
+                save_frame_as_bmp(pFrameRGB, pCodecContext->width, pCodecContext->height,
+                                  outputPath);
                 LOGD("Frame saved to %s", outputPath);
                 goto cleanup; // 找到目标帧后直接跳出
             }

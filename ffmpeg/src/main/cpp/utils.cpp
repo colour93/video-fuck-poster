@@ -13,6 +13,10 @@ extern "C" {
 #include "libavutil/imgutils.h"
 }
 
+double r2d(AVRational r){
+    return (r.den == 0) ? 0 : (double)r.num/(double)r.den;
+}
+
 // BMP 文件头的定义
 #pragma pack(push, 1)  // 保证结构体内的成员是按1字节对齐
 struct BMPFileHeader {
