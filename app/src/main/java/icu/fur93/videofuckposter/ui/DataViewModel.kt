@@ -1,23 +1,52 @@
 package icu.fur93.videofuckposter.ui
 
+import android.content.Context
+import android.graphics.Bitmap
+import android.graphics.BitmapFactory
+import android.net.Uri
+import android.os.Environment
+import android.util.Log
+import android.widget.Toast
 import androidx.lifecycle.ViewModel
+import icu.fur93.ffmpeg.FFmpegManager
 import icu.fur93.ffmpeg.video.VideoInfo
+import icu.fur93.videofuckposter.Utils
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import java.io.File
+import java.io.FileOutputStream
+import java.time.LocalDateTime
+import java.time.format.DateTimeFormatter
 
-class DataViewModel : ViewModel() {
+class DataViewModel() : ViewModel() {
+
+    private val _ffmpegManager = FFmpegManager()
 
     private val _uiState = MutableStateFlow(UiState())
     val uiState: StateFlow<UiState> = _uiState.asStateFlow()
 
-    fun updateVideoInfo(newVideoInfo: VideoInfo?) {
+    fun videoPickerHandler(videoPath: String) {
+        Log.d("video path", videoPath)
+        val newVideoInfo =
+            videoPath.let { _ffmpegManager.getVideoInfo(it) }
         _uiState.value = _uiState.value.copy(videoInfo = newVideoInfo)
     }
 
-    fun updateVideoCapturePath(newVideoCapturePath: File?) {
-        _uiState.value = _uiState.value.copy(videoCapturePath = newVideoCapturePath)
+    fun captureFrame(ctx: Context) {
+        if (uiState.value.videoInfo == null) {
+            Toast.makeText(ctx, "请选择视频", Toast.LENGTH_SHORT).show()
+            return;
+        }
+        val imageFile = _ffmpegManager.captureFrameToFile(
+            uiState.value.videoInfo!!.path,
+            uiState.value.captureTime
+        )
+        if (imageFile == null) {
+            Toast.makeText(ctx, "截图失败", Toast.LENGTH_SHORT).show()
+            return;
+        }
+        _uiState.value = _uiState.value.copy(videoCapturePath = imageFile);
     }
 
     fun updateCaptureTime(newTime: Float) {
