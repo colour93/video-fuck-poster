@@ -4,10 +4,12 @@ import android.net.Uri
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -17,9 +19,11 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import coil.compose.rememberAsyncImagePainter
 import icu.fur93.videofuckposter.ui.DataViewModel
+import icu.fur93.videofuckposter.ui.component.ShareImageButton
 
 @Composable()
-fun PosterView (viewModel: DataViewModel) {
+fun PosterView(viewModel: DataViewModel) {
+    val uiState = viewModel.uiState.collectAsState().value
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -30,20 +34,51 @@ fun PosterView (viewModel: DataViewModel) {
             text = "海报生成",
             style = MaterialTheme.typography.titleLarge
         )
-        GeneratePosterButton(viewModel)
+        Row(
+            modifier = Modifier
+                .fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            GeneratePosterButton(viewModel)
+            ShareImageButton(uiState.videoPosterPath)
+        }
         PosterPreview(viewModel)
     }
 }
 
+//@Composable()
+//fun GeneratePosterConfig (viewModel: DataViewModel) {
+//    // 观察 uiState
+//    val uiState = viewModel.uiState.collectAsState().value
+//
+//    Row {
+//        Column(modifier = Modifier.padding(16.dp)) {
+//            OutlinedTextField(
+//                value = uiState.videoPosterConfig.rows,
+//                onValueChange = {  },
+//                label = {  },
+//                modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp)
+//            )
+//            OutlinedTextField(
+//                value = columns,
+//                onValueChange = { columns = it },
+//                label = {  },
+//                modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp)
+//            )
+//        }
+//    }
+//}
+
 @Composable()
-fun GeneratePosterButton (viewModel: DataViewModel) {
+fun GeneratePosterButton(viewModel: DataViewModel) {
     val ctx = LocalContext.current;
     val uiState = viewModel.uiState.collectAsState().value
     Button(
         onClick = {
             viewModel.generatePoster(ctx)
         },
-        enabled = !uiState.pending && (uiState.videoInfo != null)    ) {
+        enabled = !uiState.pending && (uiState.videoInfo != null)
+    ) {
         Text("生成海报")
     }
 }

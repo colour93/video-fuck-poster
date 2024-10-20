@@ -26,10 +26,12 @@ import androidx.compose.ui.unit.dp
 import coil.compose.rememberAsyncImagePainter
 import icu.fur93.videofuckposter.Utils
 import icu.fur93.videofuckposter.ui.DataViewModel
+import icu.fur93.videofuckposter.ui.component.ShareImageButton
 import kotlin.math.floor
 
 @Composable()
 fun CaptureView(viewModel: DataViewModel) {
+    val uiState = viewModel.uiState.collectAsState().value
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -46,6 +48,7 @@ fun CaptureView(viewModel: DataViewModel) {
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
             CaptureFrameButton(viewModel)
+            ShareImageButton(uiState.videoCapturePath)
         }
         TimePicker(viewModel)
         CapturePreview(viewModel)

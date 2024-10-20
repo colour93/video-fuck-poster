@@ -67,6 +67,10 @@ class DataViewModel() : ViewModel() {
         _uiState.value = _uiState.value.copy(captureTime = newTime)
     }
 
+    fun updatePosterConfig(newConfig: PosterConfig) {
+        _uiState.value = _uiState.value.copy(videoPosterConfig = newConfig)
+    }
+
     fun generatePoster(ctx: Context) {
         if (uiState.value.videoInfo == null) {
             Toast.makeText(ctx, "请选择视频", Toast.LENGTH_SHORT).show()
@@ -77,7 +81,13 @@ class DataViewModel() : ViewModel() {
 
         GlobalScope.launch(Dispatchers.IO) {
 
-            val videoPosterFile = Poster.drawVideoPoster(_ffmpegManager, uiState.value.videoInfo!!, 4, 3)
+            val videoPosterFile =
+                Poster.drawVideoPoster(
+                    _ffmpegManager,
+                    uiState.value.videoInfo!!,
+                    uiState.value.videoPosterConfig.rows,
+                    uiState.value.videoPosterConfig.cols
+                )
 
             withContext(Dispatchers.Main) {
                 Toast.makeText(ctx, "生成完毕", Toast.LENGTH_SHORT).show()
@@ -89,10 +99,16 @@ class DataViewModel() : ViewModel() {
 
 }
 
+data class PosterConfig(
+    val cols: Int = 3,
+    val rows: Int = 4,
+)
+
 data class UiState(
     val pending: Boolean = false,
     val videoInfo: VideoInfo? = null,
     val videoCapturePath: File? = null,
     val captureTime: Float = 0f,
+    val videoPosterConfig: PosterConfig = PosterConfig(),
     val videoPosterPath: File? = null
 )
