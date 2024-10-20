@@ -10,10 +10,15 @@ import android.widget.Toast
 import androidx.lifecycle.ViewModel
 import icu.fur93.ffmpeg.FFmpegManager
 import icu.fur93.ffmpeg.video.VideoInfo
+import icu.fur93.videofuckposter.Poster
 import icu.fur93.videofuckposter.Utils
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.io.File
 import java.io.FileOutputStream
 import java.time.LocalDateTime
@@ -43,25 +48,51 @@ class DataViewModel() : ViewModel() {
             Toast.makeText(ctx, "请选择视频", Toast.LENGTH_SHORT).show()
             return;
         }
-        val imageFile = _ffmpegManager.captureFrameToFile(
-            uiState.value.videoInfo!!.path,
-            uiState.value.captureTime
-        )
-        if (imageFile == null) {
-            Toast.makeText(ctx, "截图失败", Toast.LENGTH_SHORT).show()
-            return;
+        _uiState.value = _uiState.value.copy(pending = true)
+        GlobalScope.launch(Dispatchers.IO) {
+            val imageFile = _ffmpegManager.captureFrameToFile(
+                uiState.value.videoInfo!!.path,
+                uiState.value.captureTime
+            )
+            _uiState.value = _uiState.value.copy(pending = false)
+            if (imageFile == null) {
+                Toast.makeText(ctx, "截图失败", Toast.LENGTH_SHORT).show()
+                return@launch;
+            }
+            _uiState.value = _uiState.value.copy(videoCapturePath = imageFile);
         }
-        _uiState.value = _uiState.value.copy(videoCapturePath = imageFile);
     }
 
     fun updateCaptureTime(newTime: Float) {
         _uiState.value = _uiState.value.copy(captureTime = newTime)
     }
 
+    fun generatePoster(ctx: Context) {
+        if (uiState.value.videoInfo == null) {
+            Toast.makeText(ctx, "请选择视频", Toast.LENGTH_SHORT).show()
+            return;
+        }
+
+        _uiState.value = _uiState.value.copy(pending = true)
+
+        GlobalScope.launch(Dispatchers.IO) {
+
+            val videoPosterFile = Poster.drawVideoPoster(_ffmpegManager, uiState.value.videoInfo!!, 4, 3)
+
+            withContext(Dispatchers.Main) {
+                Toast.makeText(ctx, "生成完毕", Toast.LENGTH_SHORT).show()
+                _uiState.value = _uiState.value.copy(pending = false)
+                _uiState.value = _uiState.value.copy(videoPosterPath = videoPosterFile)
+            }
+        }
+    }
+
 }
 
 data class UiState(
+    val pending: Boolean = false,
     val videoInfo: VideoInfo? = null,
     val videoCapturePath: File? = null,
-    val captureTime: Float = 0f
+    val captureTime: Float = 0f,
+    val videoPosterPath: File? = null
 )

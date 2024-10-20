@@ -45,7 +45,7 @@ class FFmpegManager {
         val bmpFile = File(
             dir,
             "${
-                LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMddHHmmss"))
+                LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMddHHmmssSSS"))
             }.bmp"
         )
         val result = captureFrame(
@@ -58,8 +58,8 @@ class FFmpegManager {
             val pngFile = File(
                 dir,
                 "${
-                    LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMddHHmmss"))
-                }.png."
+                    LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMddHHmmssSSS"))
+                }.png"
             )
             FileOutputStream(pngFile).use { outputStream ->
                 rawBmp.compress(Bitmap.CompressFormat.PNG, 100, outputStream)

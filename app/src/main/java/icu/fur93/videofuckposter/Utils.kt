@@ -1,14 +1,20 @@
 package icu.fur93.videofuckposter
 
 import android.content.ContentResolver
+import android.graphics.Bitmap
+import android.graphics.Canvas
+import android.graphics.Color
+import android.graphics.Paint
 import android.net.Uri
 import android.os.Environment
 import android.provider.DocumentsContract
 import android.provider.MediaStore
+import icu.fur93.ffmpeg.video.VideoInfo
+import java.io.File
 
 object Utils {
 
-    fun getFilePathFromContentUri(
+    private fun getFilePathFromContentUri(
         contentUri: Uri,
         contentResolver: ContentResolver
     ): String? {
@@ -25,7 +31,7 @@ object Utils {
         return path
     }
 
-    public fun getFilePathFromUri(
+    fun getFilePathFromUri(
         uri: Uri,
         contentResolver: ContentResolver
     ): String? {
@@ -40,5 +46,25 @@ object Utils {
             }
         }
         return null
+    }
+
+    fun humanReadableByteCount(bytes: Long, si: Boolean = true): String {
+        val unit = if (si) 1000 else 1024
+        if (bytes < unit) return "$bytes B"
+        val exp = (Math.log(bytes.toDouble()) / Math.log(unit.toDouble())).toInt()
+        val prefix = (if (si) "kMGTPE" else "KMGTPE")[exp - 1] + if (si) "" else "i"
+        return String.format("%.1f %sB", bytes / Math.pow(unit.toDouble(), exp.toDouble()), prefix)
+    }
+
+    fun getPoints(value: Long, num: Int): List<Long> {
+        val interval = value / (num - 1)
+        return (0..<num).map { it * interval }
+    }
+
+    fun formatTimeCode(seconds: Int): String {
+        val hours = seconds / 3600
+        val minutes = (seconds % 3600) / 60
+        val secs = seconds % 60
+        return String.format("%02d:%02d:%02d", hours, minutes, secs)
     }
 }

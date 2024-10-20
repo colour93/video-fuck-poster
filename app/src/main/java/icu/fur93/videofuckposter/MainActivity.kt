@@ -18,12 +18,8 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Icon
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Home
-import androidx.compose.material.icons.outlined.Home
-import androidx.compose.material3.Button
 import androidx.compose.material3.FloatingActionButton
+import androidx.compose.material3.Icon
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
@@ -32,10 +28,10 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.vector.rememberVectorPainter
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import icu.fur93.videofuckposter.ui.DataViewModel
+import icu.fur93.videofuckposter.ui.theme.VideoFuckPosterTheme
 import icu.fur93.videofuckposter.ui.view.CaptureView
 import icu.fur93.videofuckposter.ui.view.HomeView
 import icu.fur93.videofuckposter.ui.view.PosterView
@@ -54,7 +50,9 @@ class MainActivity : ComponentActivity() {
         val viewModel = DataViewModel()
 
         setContent {
-            App(viewModel)
+            VideoFuckPosterTheme {
+                App(viewModel)
+            }
         }
     }
 
@@ -79,14 +77,14 @@ fun App(viewModel: DataViewModel) {
 
     val currentTab = remember { mutableStateOf(0) }
 
-    val items = listOf("首页", "海报生成", "截图测试")
+    val items = listOf("视频信息", "海报生成", "截图测试")
     val selectedIcons = listOf(
-        rememberVectorPainter(Icons.Filled.Home),
+        painterResource(R.drawable.description_filled_24px),
         painterResource(R.drawable.gallery_thumbnail_filled_24px),
         painterResource(R.drawable.image_filled_24px)
     )
     val unselectedIcons = listOf(
-        rememberVectorPainter(Icons.Outlined.Home),
+        painterResource(R.drawable.description_24px),
         painterResource(R.drawable.gallery_thumbnail_24px),
         painterResource(R.drawable.image_24px)
     )
@@ -120,7 +118,7 @@ fun App(viewModel: DataViewModel) {
         ) {
             when (currentTab.value) {
                 0 -> HomeView(viewModel)
-                1 -> PosterView()
+                1 -> PosterView(viewModel)
                 2 -> CaptureView(viewModel)
             }
         }

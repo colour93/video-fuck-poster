@@ -2,9 +2,9 @@ package icu.fur93.videofuckposter.ui.view
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -20,13 +20,6 @@ fun HomeView (viewModel: DataViewModel) {
             .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween
-        ) {
-        }
-
         VideoInfoText(viewModel)
     }
 }
@@ -36,6 +29,11 @@ fun HomeView (viewModel: DataViewModel) {
 fun VideoInfoText(viewModel: DataViewModel) {
     // 观察 uiState
     val uiState = viewModel.uiState.collectAsState().value
+
+    Text(
+        text = "视频信息",
+        style = MaterialTheme.typography.titleLarge
+    )
 
     // 根据 videoInfo 更新 UI
     if (uiState.videoInfo != null) {

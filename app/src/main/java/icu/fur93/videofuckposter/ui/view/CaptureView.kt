@@ -36,6 +36,10 @@ fun CaptureView(viewModel: DataViewModel) {
             .padding(16.dp), // 添加内边距
         verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
+        Text(
+            text = "截图测试",
+            style = MaterialTheme.typography.titleLarge
+        )
         Row(
             modifier = Modifier
                 .fillMaxWidth(),
@@ -52,9 +56,13 @@ fun CaptureView(viewModel: DataViewModel) {
 @Composable()
 fun CaptureFrameButton(viewModel: DataViewModel) {
     val ctx = LocalContext.current;
-    Button(onClick = {
-        viewModel.captureFrame(ctx)
-    }) {
+    val uiState = viewModel.uiState.collectAsState().value
+    Button(
+        onClick = {
+            viewModel.captureFrame(ctx)
+        },
+        enabled = !uiState.pending && (uiState.videoInfo != null)
+    ) {
         Text("截取图片")
     }
 }
