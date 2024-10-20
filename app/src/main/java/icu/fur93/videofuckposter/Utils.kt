@@ -1,15 +1,10 @@
 package icu.fur93.videofuckposter
 
 import android.content.ContentResolver
-import android.graphics.Bitmap
-import android.graphics.Canvas
-import android.graphics.Color
-import android.graphics.Paint
 import android.net.Uri
 import android.os.Environment
 import android.provider.DocumentsContract
 import android.provider.MediaStore
-import icu.fur93.ffmpeg.video.VideoInfo
 import java.io.File
 
 object Utils {
@@ -66,5 +61,28 @@ object Utils {
         val minutes = (seconds % 3600) / 60
         val secs = seconds % 60
         return String.format("%02d:%02d:%02d", hours, minutes, secs)
+    }
+
+    fun deleteAllFilesInDirectory(directoryPath: String) {
+        val directory = File(directoryPath)
+        if (directory.exists() && directory.isDirectory) {
+            val files = directory.listFiles()
+            files?.forEach { file ->
+                if (file.isFile) {
+                    file.delete()
+                } else if (file.isDirectory) {
+                    deleteAllFilesInDirectory(file.absolutePath)
+                    file.delete()
+                }
+            }
+        }
+    }
+
+    fun clearCache() {
+        val dir = File(
+            Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS),
+            "VideoFuckPoster/cache",
+        )
+        deleteAllFilesInDirectory(dir.path);
     }
 }

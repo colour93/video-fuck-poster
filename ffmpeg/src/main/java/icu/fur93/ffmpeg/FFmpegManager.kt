@@ -34,10 +34,10 @@ class FFmpegManager {
         return FFmpegJni.captureFrame(videoPath, timeInSeconds, outputPath)
     }
 
-    fun captureFrameToFile(videoPath: String, timeInSeconds: Float): File? {
+    fun captureFrameToFile(videoPath: String, timeInSeconds: Float, path: String? = "cache"): File? {
         val dir = File(
             Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS),
-            "VideoFuckPoster/cache",
+            "VideoFuckPoster/$path",
         )
         if (!dir.exists()) {
             dir.mkdirs()

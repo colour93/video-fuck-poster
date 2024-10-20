@@ -143,8 +143,10 @@ object Poster {
         canvas.drawBitmap(copyrightBitmap, 0f, (height - copyrightBitmap.height).toFloat(), null)
 
         val paddingPosterBitmap =
-            Bitmap.createBitmap((width + padding * 2).toInt(),
-                (height + padding * 2).toInt(), Bitmap.Config.ARGB_8888)
+            Bitmap.createBitmap(
+                (width + padding * 2).toInt(),
+                (height + padding * 2).toInt(), Bitmap.Config.ARGB_8888
+            )
         val paddingPosterCanvas = Canvas(paddingPosterBitmap)
 
         paddingPosterCanvas.drawRect(
@@ -174,6 +176,7 @@ object Poster {
         FileOutputStream(videoPosterPng).use { outputStream ->
             paddingPosterBitmap.compress(Bitmap.CompressFormat.PNG, 100, outputStream)
         }
+        Utils.clearCache()
         return videoPosterPng
     }
 }
