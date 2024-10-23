@@ -15,8 +15,14 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.ExperimentalAnimationApi
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOutHorizontally
+import androidx.compose.animation.togetherWith
+import androidx.compose.animation.with
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
@@ -72,10 +78,12 @@ class MainActivity : ComponentActivity() {
     }
 }
 
+@OptIn(ExperimentalAnimationApi::class)
 @Composable
 fun App(viewModel: DataViewModel) {
 
     val currentTab = remember { mutableStateOf(0) }
+    val previousTab = remember { mutableStateOf(0) }
 
     val items = listOf("视频信息", "海报生成", "截图测试")
     val selectedIcons = listOf(
@@ -102,7 +110,10 @@ fun App(viewModel: DataViewModel) {
                         },
                         label = { Text(item) },
                         selected = currentTab.value == index,
-                        onClick = { currentTab.value = index }
+                        onClick = {
+                            previousTab.value = currentTab.value
+                            currentTab.value = index
+                        }
                     )
                 }
             }
@@ -111,17 +122,27 @@ fun App(viewModel: DataViewModel) {
             VideoPickerFloatingButton(viewModel)
         }
     ) { innerPadding ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(innerPadding)
-        ) {
-            when (currentTab.value) {
+        AnimatedContent(
+            targetState = currentTab.value,
+            transitionSpec = {
+                if (currentTab.value > previousTab.value) {
+                    (slideInHorizontally { fullWidth -> fullWidth } + fadeIn()).togetherWith(
+                        slideOutHorizontally { fullWidth -> -fullWidth } + fadeOut())
+                } else {
+                    (slideInHorizontally { fullWidth -> -fullWidth } + fadeIn()).togetherWith(
+                        slideOutHorizontally { fullWidth -> fullWidth } + fadeOut())
+                }
+
+            },
+            modifier = Modifier.padding(innerPadding), label = "view-switch-animation"
+        ) { screen ->
+            when (screen) {
                 0 -> HomeView(viewModel)
                 1 -> PosterView(viewModel)
                 2 -> CaptureView(viewModel)
             }
         }
+
     }
 }
 
